@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prompter obiecții</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF2F5; --panel:#FFFFFF; --ink:#13263A; --muted:#5B6B7A; --line:#C9D3DC;
+  --signal:#F2A900; --signal-ink:#2A1D00; --live:#1F8A5B; --warn:#B23A2E;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1A25; --panel:#172636; --ink:#E8EEF3; --muted:#9AAAB8; --line:#2B3E51;
+    --signal:#F2B51F; --signal-ink:#1E1500; --live:#3FBF86; --warn:#E0685C;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1A25; --panel:#172636; --ink:#E8EEF3; --muted:#9AAAB8; --line:#2B3E51;
+  --signal:#F2B51F; --signal-ink:#1E1500; --live:#3FBF86; --warn:#E0685C;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.4;-webkit-tap-highlight-color:transparent}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--signal);outline-offset:2px}
+.app{max-width:720px;margin:0 auto;padding:10px;display:flex;flex-direction:column;gap:10px;min-height:100%}
+.bar{display:flex;gap:8px;align-items:center}
+.mic{flex:1;display:flex;align-items:center;gap:10px;border:2px solid var(--line);background:var(--panel);border-radius:14px;padding:10px 14px;font-weight:700}
+.mic .dot{width:14px;height:14px;border-radius:50%;background:var(--muted);flex:none}
+.mic.on{border-color:var(--live)}
+.mic.on .dot{background:var(--live);animation:pulse 1.4s infinite}
+@keyframes pulse{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.mic.on .dot{animation:none}}
+.icon-btn{border:2px solid var(--line);background:var(--panel);border-radius:14px;padding:10px 14px;font-weight:700}
+.heard{font-size:14px;color:var(--muted);min-height:1.4em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:rtl;text-align:left}
+.heard span{direction:ltr;unicode-bidi:plaintext}
+.cue{background:var(--panel);border-radius:18px;border:2px solid var(--line);padding:16px 18px;min-height:150px;display:flex;flex-direction:column;justify-content:center}
+.cue.hit{background:var(--signal);color:var(--signal-ink);border-color:var(--signal)}
+.cue .name{font-size:15px;opacity:.8}
+.cue .words{font-size:clamp(28px,6vw,44px);font-weight:700;line-height:1.1;margin:4px 0 8px}
+.cue .first{font-size:18px}
+.cue .src{font-size:13px;opacity:.75;margin-top:8px}
+.cue.empty{color:var(--muted);font-size:17px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.grid button{text-align:left;border:2px solid var(--line);background:var(--panel);border-radius:12px;padding:12px;font-weight:700;min-height:56px}
+.grid button.active{border-color:var(--signal)}
+.note{font-size:14px;color:var(--muted)}
+.warn{color:var(--warn);font-weight:700}
+/* editor */
+.editor{display:none;flex-direction:column;gap:12px}
+.editing .editor{display:flex}
+.editing .live-view{display:none}
+.card-form{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.card-form label{font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.card-form input,.card-form textarea,.card-form select{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px}
+.card-form textarea{min-height:64px;resize:vertical}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.primary{background:var(--ink);color:var(--bg);border:none;border-radius:12px;padding:12px 16px;font-weight:700}
+.ghost{background:none;border:2px solid var(--line);border-radius:12px;padding:10px 14px;font-weight:700}
+.danger{color:var(--warn)}
+.live-view{display:flex;flex-direction:column;gap:10px}
+details{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px 12px}
+details textarea{width:100%;min-height:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="bar">
+    <button class="mic" id="micBtn" aria-pressed="false"><span class="dot"></span><span id="micLabel">Pornește ascultarea</span></button>
+    <button class="icon-btn" id="modeBtn">Editează</button>
+  </div>
+
+  <div class="live-view">
+    <div class="heard" id="heard" aria-live="polite"><span></span></div>
+    <div class="cue empty" id="cue">Adaugă primele tale obiecții din „Editează”. Pe ecran apar doar indiciile tale, nu un text de citit.</div>
+    <div class="grid" id="grid"></div>
+    <p class="note" id="status">Transcrierea nu se salvează. Cardurile rămân doar pe acest dispozitiv.</p>
+  </div>
+
+  <div class="editor">
+    <div id="forms"></div>
+    <div class="row">
+      <button class="primary" id="addBtn">Adaugă obiecție</button>
+      <button class="ghost" id="doneBtn">Gata</button>
+      <button class="ghost danger" id="seedBtn">Reîncarcă lista inițială</button>
+    </div>
+    <details>
+      <summary>Copie de siguranță</summary>
+      <p class="note">Copiază textul de mai jos și păstrează-l într-o notă pe dispozitiv. Ca să restaurezi, lipește-l aici și apasă „Restaurează”.</p>
+      <textarea id="backup" spellcheck="false"></textarea>
+      <div class="row"><button class="ghost" id="restoreBtn">Restaurează</button></div>
+    </details>
+  </div>
+</div>
+
+<script>
+(function(){
+  var KEY='prompter-obiectii-v1';
+  var cards=[];
+  var SEED=[
+    ["b1","Nu vreau să colaborez cu agenții","nu vreau sa colaborez, nu lucrez cu agentii, nu vreau agentii, fara agentie, nu vreau sa ma incurc","Script Blitz"],
+    ["b2","Comisionul / serviciul e prea scump","comision, comisionul, prea mare, prea scump, e scump, conditiile, prea mari","Academia Blitz"],
+    ["b3","Nu plătesc comision, mă descurc singur","ma descurc singur, vand singur, nu vreau sa platesc, nu platesc comision, nu am nevoie","Script Blitz"],
+    ["b4","Nu semnez contract","contract, contractul, fara contract, nu semnez, nu vreau sa semnez","Script Blitz"],
+    ["b5","Trebuie să semnăm ceva?","semnam ceva, trebuie sa semnam, vreo intelegere, semnam","Script Blitz"],
+    ["b6","Nu vreau exclusivitate","exclusivitate, exclusivitatea, exclusiv","Script Blitz"],
+    ["b7","M-am răzgândit, nu ne mai vedem","m am razgandit, razgandit, nu vreau sa ne vedem, nu mai vreau sa ne vedem","Script Blitz"],
+    ["b8","Nu acum","nu acum, mai tarziu, ma mai gandesc, nu e momentul, deocamdata","Academia Blitz"],
+    ["b9","Experiență proastă cu altă agenție","am mai colaborat, experiente, experienta, nu mi au vandut, nu mi a placut, m a prostit","Academia Blitz"],
+    ["b10","Altă agenție are comision mai mic","comision mai mic, alta agentie, mai ieftin, iau mai putin","Academia Blitz"],
+    ["b11","Aceeași promovare / promovarea nu ajută","promovare, promovarea, aceeasi promovare, reclama, nu ajuta","Academia Blitz"],
+    ["b12","Toate agențiile sunt la fel","toate agentiile, sunteti la fel, sunt toate la fel","Academia Blitz"],
+    ["b13","Agentul nu face nimic","nu face nimic, nu faceti nimic, nu fac nimic","Academia Blitz"],
+    ["b14","Analiza înainte de contract","analiza, analiza inainte, evaluare, evaluarea, inainte de contract, intai analiza","Formularea mea"],
+    ["b15","Comisionul doar de la cumpărător","de la cumparator, cumparatorul plateste, doar cumparatorul, luati de la cumparator","Formularea mea"]
+  ];
+  function seedCards(){return SEED.map(function(s){return{id:s[0],name:s[1],triggers:s[2],cue:'',first:'',src:s[3]}})}
+  var raw=null;
+  try{raw=localStorage.getItem(KEY)}catch(e){}
+  if(raw===null){cards=seedCards();save()}
+  else{try{cards=JSON.parse(raw)||[]}catch(e){cards=[]}}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(cards))}catch(e){setStatus('Cardurile nu s-au putut salva pe dispozitiv.',true)}}
+
+  var $=function(id){return document.getElementById(id)};
+  var app=$('app'),cueEl=$('cue'),grid=$('grid'),statusEl=$('status'),heardEl=$('heard').firstElementChild;
+  var SOURCES=['Script Blitz','Academia Blitz','Formularea mea'];
+  var activeId=null,holdTimer=null;
+
+  function norm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim()}
+  function uid(){return 'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+  function setStatus(msg,bad){statusEl.textContent=msg;statusEl.className='note'+(bad?' warn':'')}
+
+  function showCard(c){
+    activeId=c?c.id:null;
+    cueEl.innerHTML='';
+    if(!c){
+      cueEl.className='cue empty';
+      cueEl.textContent=cards.length?'Ascult. Atinge o obiecție dacă vrei s-o vezi imediat.':'Adaugă primele tale obiecții din „Editează”. Pe ecran apar doar indiciile tale, nu un text de citit.';
+    }else{
+      cueEl.className='cue hit';
+      var n=document.createElement('div');n.className='name';n.textContent=c.cue?(c.name||'Obiecție'):'Indiciu necompletat · adaugă-l în Editează';
+      var w=document.createElement('div');w.className='words';w.textContent=c.cue||c.name||'—';
+      cueEl.append(n,w);
+      if(c.first){var f=document.createElement('div');f.className='first';f.textContent=c.first;cueEl.append(f)}
+      if(c.src){var s=document.createElement('div');s.className='src';s.textContent=c.src;cueEl.append(s)}
+    }
+    Array.prototype.forEach.call(grid.children,function(b){b.classList.toggle('active',b.dataset.id===activeId)});
+  }
+
+  function renderGrid(){
+    grid.innerHTML='';
+    cards.forEach(function(c){
+      var b=document.createElement('button');b.dataset.id=c.id;b.textContent=c.name||'Fără nume';
+      b.onclick=function(){clearTimeout(holdTimer);showCard(activeId===c.id?null:c)};
+      grid.append(b);
+    });
+    showCard(cards.find(function(c){return c.id===activeId})||null);
+  }
+
+  function field(label,value,multi,onInput){
+    var l=document.createElement('label');l.textContent=label;
+    var i=document.createElement(multi?'textarea':'input');i.value=value||'';i.oninput=function(){onInput(i.value);save()};
+    l.append(i);return l;
+  }
+  function renderForms(){
+    var box=$('forms');box.innerHTML='';
+    cards.forEach(function(c,idx){
+      var f=document.createElement('div');f.className='card-form';
+      f.append(
+        field('Obiecția (cum o recunoști tu)',c.name,false,function(v){c.name=v}),
+        field('Cuvinte care o declanșează, separate prin virgulă',c.triggers,false,function(v){c.triggers=v}),
+        field('Indiciul tău: 3–5 cuvinte care îți aduc aminte răspunsul',c.cue,false,function(v){c.cue=v}),
+        field('Prima frază (opțional)',c.first,true,function(v){c.first=v})
+      );
+      var sl=document.createElement('label');sl.textContent='Sursa';
+      var sel=document.createElement('select');
+      SOURCES.forEach(function(s){var o=document.createElement('option');o.textContent=s;if(c.src===s)o.selected=true;sel.append(o)});
+      sel.onchange=function(){c.src=sel.value;save()};sl.append(sel);
+      var del=document.createElement('button');del.className='ghost danger';del.textContent='Șterge obiecția';
+      del.onclick=function(){if(confirm('Ștergi obiecția „'+(c.name||'fără nume')+'”?')){cards.splice(idx,1);save();renderForms()}};
+      f.append(sl,del);box.append(f);
+    });
+    $('backup').value=JSON.stringify(cards);
+  }
+
+  $('addBtn').onclick=function(){cards.push({id:uid(),name:'',triggers:'',cue:'',first:'',src:SOURCES[2]});save();renderForms();var fs=document.querySelectorAll('.card-form input');if(fs.length)fs[fs.length-3].focus()};
+  function setMode(edit){app.classList.toggle('editing',edit);$('modeBtn').textContent=edit?'Prompter':'Editează';if(edit){stopListening();renderForms()}else{renderGrid()}}
+  $('modeBtn').onclick=function(){setMode(!app.classList.contains('editing'))};
+  $('doneBtn').onclick=function(){setMode(false)};
+  $('seedBtn').onclick=function(){if(confirm('Înlocuiești toate cardurile actuale cu lista inițială de 15 obiecții? Indiciile scrise de tine se pierd dacă nu ai o copie de siguranță.')){cards=seedCards();save();renderForms()}};
+  $('restoreBtn').onclick=function(){
+    try{var d=JSON.parse($('backup').value);if(!Array.isArray(d))throw 0;cards=d.map(function(c){return{id:c.id||uid(),name:c.name||'',triggers:c.triggers||'',cue:c.cue||'',first:c.first||'',src:c.src||SOURCES[2]}});save();renderForms();alert('Cardurile au fost restaurate.')}
+    catch(e){alert('Textul lipit nu este o copie de siguranță validă.')}
+  };
+
+  /* ---- speech ---- */
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  var rec=null,listening=false,buffer='';
+  var micBtn=$('micBtn'),micLabel=$('micLabel');
+
+  function match(text){
+    var t=' '+norm(text)+' ';var best=null,bestLen=0;
+    cards.forEach(function(c){
+      (c.triggers||'').split(',').forEach(function(tr){
+        var k=norm(tr);if(k.length<3)return;
+        if(t.indexOf(' '+k+' ')>-1||(k.indexOf(' ')>-1&&t.indexOf(k)>-1)){if(k.length>bestLen){best=c;bestLen=k.length}}
+      });
+    });
+    return best;
+  }
+  function onText(text){
+    var words=text.split(/\s+/);heardEl.textContent=words.slice(-14).join(' ');
+    var c=match(words.slice(-25).join(' '));
+    if(c&&c.id!==activeId){showCard(c);clearTimeout(holdTimer);holdTimer=setTimeout(function(){showCard(null)},20000)}
+  }
+  function startListening(){
+    if(!SR){setStatus('Recunoașterea vocală nu e disponibilă aici. Deschide pagina în Chrome sau folosește butoanele.',true);return}
+    if(!cards.length){setStatus('Adaugă întâi cel puțin o obiecție cu cuvinte declanșatoare.',true);return}
+    rec=new SR();rec.lang='ro-RO';rec.continuous=true;rec.interimResults=true;
+    rec.onresult=function(e){var interim='';for(var i=e.resultIndex;i<e.results.length;i++){var r=e.results[i];if(r.isFinal){buffer=(buffer+' '+r[0].transcript).split(/\s+/).slice(-60).join(' ')}else{interim+=r[0].transcript}}onText(buffer+' '+interim)};
+    rec.onerror=function(e){if(e.error==='no-speech'||e.error==='aborted')return;listening=false;updateMic();setStatus('Microfonul nu a pornit. Cod: '+e.error+' | protocol: '+location.protocol+' | securizat: '+(window.isSecureContext?'da':'nu')+' | în cadru: '+(window.self!==window.top?'da':'nu'),true)};
+    rec.onend=function(){if(listening){try{rec.start()}catch(e){}}};
+    try{rec.start();listening=true;updateMic();setStatus('Ascult. Transcrierea nu se salvează.')}catch(e){setStatus('Ascultarea nu a putut porni.',true)}
+  }
+  function stopListening(){listening=false;buffer='';heardEl.textContent='';if(rec){try{rec.stop()}catch(e){}}updateMic()}
+  function updateMic(){micBtn.classList.toggle('on',listening);micBtn.setAttribute('aria-pressed',listening);micLabel.textContent=listening?'Ascult — atinge ca să oprești':'Pornește ascultarea'}
+  micBtn.onclick=function(){listening?stopListening():startListening()};
+  document.addEventListener('visibilitychange',function(){if(document.hidden&&listening){/* Chrome oprește microfonul în fundal */}});
+
+  renderGrid();
+})();
+</script>
+</body>
+</html>
