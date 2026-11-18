@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prompter</title>
+<meta name="description" content="Prompter vocal pentru apeluri și obiecții imobiliare cu recunoaștere vocală și indicii rapide.">
+<meta property="og:title" content="Prompter">
+<meta property="og:description" content="Prompter vocal pentru apeluri și obiecții imobiliare cu recunoaștere vocală și indicii rapide.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF2F5; --panel:#FFFFFF; --ink:#13263A; --muted:#5B6B7A; --line:#C9D3DC;
+  --signal:#F2A900; --signal-ink:#2A1D00;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1A25; --panel:#172636; --ink:#E8EEF3; --muted:#9AAAB8; --line:#2B3E51;
+    --signal:#F2B51F; --signal-ink:#1E1500;
+  }
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.4}
+.app{max-width:720px;margin:0 auto;padding:16px 10px;display:flex;flex-direction:column;gap:12px}
+h1{font-size:24px;margin:0}
+.note{font-size:14px;color:var(--muted);margin:0}
+.list{display:flex;flex-direction:column;gap:10px}
+a.card{display:block;text-decoration:none;color:inherit;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:14px 16px}
+a.card:hover,a.card:focus-visible{border-color:var(--signal);outline:none}
+.card-title{font-weight:700;font-size:18px;margin-bottom:4px}
+.card-desc{font-size:14px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Prompter</h1>
+  <p class="note">Alege varianta de prompter pe care vrei să o folosești:</p>
+  <div class="list">
+    <a class="card" href="/prompter-cereri.html">
+      <div class="card-title">Prompter cereri</div>
+      <div class="card-desc">Pașii apelului + obiecții pentru cereri (cu listă inițială preîncărcată).</div>
+    </a>
+    <a class="card" href="/prompter-obiectii.html">
+      <div class="card-title">Prompter obiecții</div>
+      <div class="card-desc">Obiecții cu listă inițială preîncărcată (15 carduri).</div>
+    </a>
+    <a class="card" href="/prompter-obiectii-1.html">
+      <div class="card-title">Prompter obiecții (fără listă inițială)</div>
+      <div class="card-desc">Versiune goală în care adaugi manual propriile obiecții.</div>
+    </a>
+  </div>
+</div>
+</body>
+</html>

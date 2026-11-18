@@ -1,0 +1,7 @@
+{
+  "name": "Prompter",
+  "description": "Prompter vocal pentru apeluri și obiecții imobiliare cu recunoaștere vocală și indicii rapide.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
